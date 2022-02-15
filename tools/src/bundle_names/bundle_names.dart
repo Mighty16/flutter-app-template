@@ -3,20 +3,15 @@ import 'dart:io';
 
 import '../tools_common.dart';
 
-const _config_file = 'bundle_names_config.json';
-
-const _android_app_id = 'applicationId';
+const _androidAppId = 'applicationId';
 
 void main(List<String> arguments) async {
   String scriptPath = Platform.script.toFilePath();
   File scriptFile = File(scriptPath);
 
-  //String configPath = '${scriptFile.parent.path}/$_config_file';
   String configPath = arguments[0];
-  //print('ConfigPath: $configPath');
   File configFile = File(configPath);
   bool hasConfig = await configFile.exists();
-  //print('config file exists: $hasConfig');
 
   _SetupConfig config;
 
@@ -34,15 +29,13 @@ void main(List<String> arguments) async {
     newConfigFile.writeAsString(config.toString());
   }
 
-  //Check if config is valid
-  //print(config.toString());
-
   //Get root directory
   Directory projectDir = getProjectRootDir(scriptFile);
   stdout.writeln('Searching platform projects...');
   Map<String, Directory> subDirs = getSubDirsAsMap(projectDir);
 
   stdout.writeln('Renaming bundle ids...');
+  _configureYaml(projectDir.findFile('pubspec.yaml'), config);
   _configureAndroid(subDirs['android'], config);
   _configureIOS(subDirs['ios'], config);
   _configureWeb(subDirs['web'], config);
@@ -59,6 +52,9 @@ Future<_SetupConfig> _readConfigFromFile(File configFile) async {
 }
 
 _SetupConfig _getConfigFromInput() {
+  String projectName = readConsoleInput('Enter project package name',
+      onEmptyMessage: "Project package name must not be empty");
+
   String name = readConsoleInput('Enter app name',
       onEmptyMessage: "App name must not be empty");
   String description = readConsoleInput('Enter app description');
@@ -103,6 +99,7 @@ _SetupConfig _getConfigFromInput() {
   );
 
   return _SetupConfig(
+    projectName: projectName,
     appName: name,
     appDescription: description,
     androidId: androidAppId,
@@ -115,6 +112,36 @@ _SetupConfig _getConfigFromInput() {
     windowsAppName: windowsAppName,
     macOSId: macosId,
   );
+}
+
+void _configureYaml(File pubSpecFile, _SetupConfig config) {
+  try {
+    List<String> pubSpecContent = pubSpecFile.readAsLinesSync();
+
+    int nameLineIndex =
+        pubSpecContent.indexWhere((String line) => line.startsWith('name:'));
+    String nameLine = pubSpecContent[nameLineIndex];
+
+    int nameReplaceStart = nameLine.indexOf(':') + 2;
+    String updatedNameLine = nameLine.replaceRange(
+        nameReplaceStart, nameLine.length, config.projectName);
+    pubSpecContent[nameLineIndex] = updatedNameLine;
+
+    int descriptionLineIndex = pubSpecContent
+        .indexWhere((String line) => line.startsWith('description:'));
+    String descriptionLine = pubSpecContent[descriptionLineIndex];
+
+    int descriptionReplaceStart = descriptionLine.indexOf(':') + 2;
+    String updatedDescriptionLine = descriptionLine.replaceRange(
+        descriptionReplaceStart, descriptionLine.length, config.appDescription);
+    pubSpecContent[descriptionLineIndex] = updatedDescriptionLine;
+
+    pubSpecFile.writeAsStringSync(pubSpecContent.join('\n'));
+    stdout.writeln('✔ pubspec.yaml configured');
+  } catch (e) {
+    printError('Error while configuring pubspec.yaml file: ${e.toString()}');
+    rethrow;
+  }
 }
 
 void _configureAndroid(Directory? androidDir, _SetupConfig config) async {
@@ -130,12 +157,12 @@ void _configureAndroid(Directory? androidDir, _SetupConfig config) async {
   List<String> gradleBuildContent = gradleBuild.readAsLinesSync();
 
   int targetLineIndex = gradleBuildContent
-      .indexWhere((String line) => line.contains(_android_app_id));
+      .indexWhere((String line) => line.contains(_androidAppId));
 
   String appIdLine = gradleBuildContent[targetLineIndex];
 
   int replaceStart =
-      appIdLine.indexOf(_android_app_id) + _android_app_id.length + 1;
+      appIdLine.indexOf(_androidAppId) + _androidAppId.length + 1;
 
   String changedLine = appIdLine.replaceRange(
       replaceStart, appIdLine.length, '"${config.androidId}"');
@@ -326,6 +353,7 @@ void _configureLinux(Directory? linuxDir, _SetupConfig config) {
 }
 
 class _SetupConfig {
+  final String projectName;
   final String appName;
   final String appDescription;
   final String androidId;
@@ -339,6 +367,7 @@ class _SetupConfig {
   final String macOSId;
 
   const _SetupConfig({
+    required this.projectName,
     required this.appName,
     required this.appDescription,
     required this.androidId,
@@ -354,6 +383,7 @@ class _SetupConfig {
 
   factory _SetupConfig.fromJson(Map<String, dynamic> json) {
     return _SetupConfig(
+      projectName: json['projectName'],
       appName: json['appName'],
       appDescription: json['appDescription'],
       androidId: json['androidId'],
@@ -370,6 +400,7 @@ class _SetupConfig {
 
   @override
   String toString() => '''{
+      "projectName": "$projectName",
       "appName": "$appName",
       "appDescription": "$appDescription",
       "androidId": "$androidId",

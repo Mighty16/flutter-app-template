@@ -1,4 +1,5 @@
 {
+      "projectName": "project_name",
       "appName": "App name",
       "appDescription": "App description",
       "androidId": "android.app.id",

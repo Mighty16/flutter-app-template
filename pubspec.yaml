@@ -1,5 +1,5 @@
-name: test_project
-description: Sample Flutter project for demo purposes.
+name: project_name
+description: App description
 publish_to: 'none'
 
 version: 1.0.0+1

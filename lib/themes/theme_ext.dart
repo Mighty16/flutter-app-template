@@ -1,5 +1,5 @@
 import 'package:flutter/cupertino.dart';
-import 'package:test_project/themes/app_theme.dart';
+import '../themes/app_theme.dart';
 
 import 'app_theme_widget.dart';
 import 'theme_light.dart';
