@@ -1,0 +1,13 @@
+{
+      "appName": "App name",
+      "appDescription": "App description",
+      "androidId": "android.app.id",
+      "iOSBundleId": "ios.app.id",
+      "webAppName": "web app",
+      "webAppShortName": "web app short",
+      "linuxAppId": "linux.app.id",
+      "linuxBinaryName": "App name",
+      "windowsBinaryName": "windows_binary",
+      "windowsAppName": "windows app",
+      "macOSId": "macos.app.id"
+  }
