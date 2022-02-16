@@ -2,6 +2,7 @@
       "projectName": "project_name",
       "appName": "App name",
       "appDescription": "App description",
+      "appCopyright":"",
       "androidId": "android.app.id",
       "iOSBundleId": "ios.app.id",
       "webAppName": "web app",

@@ -58,6 +58,9 @@ _SetupConfig _getConfigFromInput() {
   String name = readConsoleInput('Enter app name',
       onEmptyMessage: "App name must not be empty");
   String description = readConsoleInput('Enter app description');
+
+  String appCopyright = readConsoleInput('Enter app copyright notice');
+
   String androidAppId = readConsoleInput(
     'Specify Android app id',
     onEmptyMessage: 'Android app id must not be empty!',
@@ -102,6 +105,7 @@ _SetupConfig _getConfigFromInput() {
     projectName: projectName,
     appName: name,
     appDescription: description,
+    appCopyright: appCopyright,
     androidId: androidAppId,
     iOSBundleId: iOSBundleId,
     webAppName: webAppName,
@@ -329,7 +333,31 @@ void _configureMac(Directory? macDir, _SetupConfig config) {
       projFileContent.join('\n').replaceAll(currentBundleId, config.macOSId);
 
   pbxProjFile.writeAsString(updatedText);
+
+  File appInfoFile =
+      macDir.findDir('Runner').findDir('Configs').findFile('AppInfo.xcconfig');
+  List<String> appInfoContent = appInfoFile.readAsLinesSync();
+
+  _replaceValueInAppInfo(appInfoContent, 'PRODUCT_NAME', config.appName);
+  _replaceValueInAppInfo(
+      appInfoContent, 'PRODUCT_BUNDLE_IDENTIFIER', config.macOSId);
+  _replaceValueInAppInfo(
+      appInfoContent, 'PRODUCT_COPYRIGHT', config.appCopyright);
+
+  appInfoFile.writeAsString(appInfoContent.join('\n'));
+
   stdout.writeln('✔ macOS configured');
+}
+
+void _replaceValueInAppInfo(
+    List<String> appInfoContent, String key, String replacement) {
+  int targetLineIndex =
+      appInfoContent.indexWhere((String line) => line.contains(key));
+  String targetLine = appInfoContent[targetLineIndex];
+  int replaceStart = targetLine.indexOf('=') + 2;
+  String updatedNameLine =
+      targetLine.replaceRange(replaceStart, targetLine.length, replacement);
+  appInfoContent[targetLineIndex] = updatedNameLine;
 }
 
 void _configureLinux(Directory? linuxDir, _SetupConfig config) {
@@ -356,6 +384,7 @@ class _SetupConfig {
   final String projectName;
   final String appName;
   final String appDescription;
+  final String appCopyright;
   final String androidId;
   final String iOSBundleId;
   final String webAppName;
@@ -369,6 +398,7 @@ class _SetupConfig {
   const _SetupConfig({
     required this.projectName,
     required this.appName,
+    required this.appCopyright,
     required this.appDescription,
     required this.androidId,
     required this.iOSBundleId,
@@ -386,6 +416,7 @@ class _SetupConfig {
       projectName: json['projectName'],
       appName: json['appName'],
       appDescription: json['appDescription'],
+      appCopyright: json['appCopyright'],
       androidId: json['androidId'],
       iOSBundleId: json['iOSBundleId'],
       webAppName: json['webAppName'],
@@ -403,6 +434,7 @@ class _SetupConfig {
       "projectName": "$projectName",
       "appName": "$appName",
       "appDescription": "$appDescription",
+      "appCopyright": "$appCopyright",
       "androidId": "$androidId",
       "iOSBundleId": "$iOSBundleId",
       "webAppName": "$webAppName",
