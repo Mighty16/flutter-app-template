@@ -114,7 +114,8 @@ void _generateIosFiles(Directory? iOSDir, _DisplayNamesConfig config) {
           .indexWhere((String line) => line.contains('CFBundleDisplayName'));
 
       if (nameLineIndex == -1) {
-        fileContents.insert(0, 'CFBundleDisplayName = "${displayName.name}";');
+        fileContents.insert(fileContents.length,
+            'CFBundleDisplayName = "${displayName.name}";');
         infoPlistFile.writeAsStringSync(fileContents.join('\n'));
         printWarning('Added \'CFBundleDisplayName\' key to $subPath');
       } else {
