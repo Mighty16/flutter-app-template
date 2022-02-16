@@ -241,17 +241,37 @@ void _configureWeb(Directory? webDir, _SetupConfig config) {
   File indexFile = webDir.findFile('index.html');
   List<String> indexContent = indexFile.readAsLinesSync();
 
-  int titleTargetIndex = indexContent.indexWhere(
-      (String line) => line.contains('"apple-mobile-web-app-title"'));
-  String titleLine = indexContent[titleTargetIndex];
-  int replaceStart = titleLine.indexOf('content=') + ('content='.length);
-  int replaceEnd = titleLine.indexOf('>');
-  String titleUpdatedLine = titleLine.replaceRange(
-      replaceStart, replaceEnd, '"${config.webAppName}"');
-  indexContent[titleTargetIndex] = titleUpdatedLine;
-  indexFile.writeAsStringSync(indexContent.join('\n'));
+  _replaceContentInTag(
+      indexContent, '"description"', '"${config.appDescription}"');
+  _replaceContentInTag(
+      indexContent, '"apple-mobile-web-app-title"', '"${config.webAppName}"');
 
+  int titleLineIndex =
+      indexContent.indexWhere((String line) => line.contains('<title>'));
+
+  String titleTargetLine = indexContent[titleLineIndex];
+
+  int replaceStart = titleTargetLine.indexOf('>') + 1;
+  int replaceEnd = titleTargetLine.indexOf('</title>');
+
+  String updatedTitleLine =
+      titleTargetLine.replaceRange(replaceStart, replaceEnd, config.appName);
+  indexContent[titleLineIndex] = updatedTitleLine;
+
+  indexFile.writeAsStringSync(indexContent.join('\n'));
   stdout.writeln('✔ Web configured');
+}
+
+void _replaceContentInTag(
+    List<String> fileContent, String key, String replacement) {
+  int targetLineIndex =
+      fileContent.indexWhere((String line) => line.contains(key));
+  String targetLine = fileContent[targetLineIndex];
+  int replaceStart = targetLine.indexOf('content=') + ('content='.length);
+  int replaceEnd = targetLine.indexOf('>');
+  String titleUpdatedLine =
+      targetLine.replaceRange(replaceStart, replaceEnd, replacement);
+  fileContent[targetLineIndex] = titleUpdatedLine;
 }
 
 void _findAndReplaceStringInCMake(
