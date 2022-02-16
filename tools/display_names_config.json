@@ -1,0 +1,10 @@
+{
+  "android": {
+    "default": "App Name",
+    "en": "App Name"
+  },
+  "iOS": {
+    "default": "App name",
+    "en": "App Name"
+  }
+}
