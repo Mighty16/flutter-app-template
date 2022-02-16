@@ -304,7 +304,32 @@ void _configureIOS(Directory? iOSDir, _SetupConfig config) {
       projFileContent.join('\n').replaceAll(bundleId, config.iOSBundleId);
 
   pbxProjFile.writeAsString(updatedText);
+
+  File infoPlistFile = iOSDir.findDir('Runner').findFile('Info.plist');
+
+  List<String> infoPlistContent = infoPlistFile.readAsLinesSync();
+
+  _replaceValueInIosXml(
+      infoPlistContent, 'CFBundleDisplayName', config.appName);
+
+  _replaceValueInIosXml(infoPlistContent, 'CFBundleName', config.appName);
+
+  infoPlistFile.writeAsString(infoPlistContent.join('\n'));
+
   stdout.writeln('✔ iOS configured');
+}
+
+void _replaceValueInIosXml(
+    List<String> fileContent, String key, String replacement) {
+  int targetLineIndex = fileContent
+          .indexWhere((String line) => line.contains('<key>$key</key>')) +
+      1;
+
+  String targetLine = fileContent[targetLineIndex];
+  String updatedLine = targetLine.replaceRange(targetLine.indexOf('>') + 1,
+      targetLine.indexOf('</string>'), replacement);
+
+  fileContent[targetLineIndex] = updatedLine;
 }
 
 void _configureMac(Directory? macDir, _SetupConfig config) {
