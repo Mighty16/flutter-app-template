@@ -4,7 +4,23 @@
     "en": "App Name"
   },
   "iOS": {
-    "default": "App name",
-    "en": "App Name"
+    "default": {
+      "title":"App name",
+      "NSPhotoLibraryUsageDescription": null,
+      "NSCameraUsageDescription": null,
+      "NSMicrophoneUsageDescription": null,
+      "NSLocationWhenInUseUsageDescription": null,
+      "NSLocationAlwaysUsageDescription": null,
+      "NSLocationAlwaysAndWhenInUseUsageDescription": null
+    },
+    "en": {
+      "title": "App Name",
+      "NSPhotoLibraryUsageDescription": null,
+      "NSCameraUsageDescription": null,
+      "NSMicrophoneUsageDescription": null,
+      "NSLocationWhenInUseUsageDescription": null,
+      "NSLocationAlwaysUsageDescription": null,
+      "NSLocationAlwaysAndWhenInUseUsageDescription": null
+    }
   }
 }

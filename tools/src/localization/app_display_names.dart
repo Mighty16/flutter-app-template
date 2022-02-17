@@ -36,7 +36,7 @@ void _generateAndroidFiles(Directory? androidDir, _DisplayNamesConfig config) {
   Directory resDir =
       androidDir.findDir('app').findDir('src').findDir('main').findDir('res');
 
-  for (_DisplayName displayName in config.androidNames) {
+  for (_AndroidDisplayName displayName in config.androidNames) {
     String slash = Platform.pathSeparator;
 
     String subPath = 'values-${displayName.lang}${slash}strings.xml';
@@ -92,59 +92,128 @@ void _generateIosFiles(Directory? iOSDir, _DisplayNamesConfig config) {
 
   Directory runnerDir = iOSDir.findDir('Runner');
 
-  for (_DisplayName displayName in config.iOSNames) {
+  for (_IOSStrings iOSStrings in config.iOSNames) {
     String slash = Platform.pathSeparator;
 
     String subPath;
-    if (displayName.lang == 'default') {
+    if (iOSStrings.lang == 'default') {
       subPath = 'InfoPlist.strings';
     } else {
-      subPath = '${displayName.lang}.lproj${slash}InfoPlist.strings';
+      subPath = '${iOSStrings.lang}.lproj${slash}InfoPlist.strings';
     }
 
     File infoPlistFile = File('${runnerDir.path}$slash$subPath');
 
     if (!infoPlistFile.existsSync()) {
       infoPlistFile.createSync(recursive: true);
-      String fileContent = 'CFBundleDisplayName = "${displayName.name}";';
-      infoPlistFile.writeAsStringSync(fileContent);
+      String nameLine = 'CFBundleDisplayName = "${iOSStrings.title}";';
+
+      List<String> lines = [
+        nameLine,
+        if (iOSStrings.nSPhotoLibraryUsageDescription != null)
+          'NSPhotoLibraryUsageDescription = "${iOSStrings.nSPhotoLibraryUsageDescription}";',
+        if (iOSStrings.nSCameraUsageDescription != null)
+          'NSCameraUsageDescription = "${iOSStrings.nSCameraUsageDescription}";',
+        if (iOSStrings.nSMicrophoneUsageDescription != null)
+          'NSMicrophoneUsageDescription = "${iOSStrings.nSMicrophoneUsageDescription}";',
+        if (iOSStrings.nSLocationWhenInUseUsageDescription != null)
+          'NSLocationWhenInUseUsageDescription = "${iOSStrings.nSLocationWhenInUseUsageDescription}";',
+        if (iOSStrings.nSLocationAlwaysUsageDescription != null)
+          'NSLocationAlwaysUsageDescription = "${iOSStrings.nSLocationAlwaysUsageDescription}";',
+        if (iOSStrings.nSLocationAlwaysAndWhenInUseUsageDescription != null)
+          'NSLocationAlwaysAndWhenInUseUsageDescription = "${iOSStrings.nSLocationAlwaysAndWhenInUseUsageDescription}";',
+      ];
+
+      infoPlistFile.writeAsStringSync(lines.join('\n'));
     } else {
       List<String> fileContents = infoPlistFile.readAsLinesSync();
-      int nameLineIndex = fileContents
-          .indexWhere((String line) => line.contains('CFBundleDisplayName'));
 
-      if (nameLineIndex == -1) {
-        fileContents.insert(fileContents.length,
-            'CFBundleDisplayName = "${displayName.name}";');
-        infoPlistFile.writeAsStringSync(fileContents.join('\n'));
-        printWarning('Added \'CFBundleDisplayName\' key to $subPath');
-      } else {
-        String nameLine = fileContents[nameLineIndex];
+      _addOrUpdateIOSString(
+        fileContents,
+        subPath,
+        'CFBundleDisplayName',
+        iOSStrings.title,
+      );
 
-        int keyLength = 'CFBundleDisplayName'.length;
+      _addOrUpdateIOSString(
+        fileContents,
+        subPath,
+        'NSPhotoLibraryUsageDescription',
+        iOSStrings.nSPhotoLibraryUsageDescription,
+      );
 
-        int substringStart =
-            nameLine.indexOf('CFBundleDisplayName') + keyLength;
+      _addOrUpdateIOSString(
+        fileContents,
+        subPath,
+        'NSCameraUsageDescription',
+        iOSStrings.nSCameraUsageDescription,
+      );
 
-        String subString = nameLine.substring(substringStart);
+      _addOrUpdateIOSString(
+        fileContents,
+        subPath,
+        'NSMicrophoneUsageDescription',
+        iOSStrings.nSMicrophoneUsageDescription,
+      );
 
-        int currentNameStart = subString.indexOf('"') + 1;
-        int currentNameEnd = subString.indexOf('";');
+      _addOrUpdateIOSString(
+        fileContents,
+        subPath,
+        'NSLocationWhenInUseUsageDescription',
+        iOSStrings.nSLocationWhenInUseUsageDescription,
+      );
 
-        String currentName =
-            subString.substring(currentNameStart, currentNameEnd);
+      _addOrUpdateIOSString(
+        fileContents,
+        subPath,
+        'NSLocationAlwaysUsageDescription',
+        iOSStrings.nSLocationAlwaysUsageDescription,
+      );
 
-        String updatedNameLine =
-            nameLine.replaceAll(currentName, displayName.name);
+      _addOrUpdateIOSString(
+        fileContents,
+        subPath,
+        'NSLocationAlwaysAndWhenInUseUsageDescription',
+        iOSStrings.nSLocationAlwaysAndWhenInUseUsageDescription,
+      );
 
-        fileContents[nameLineIndex] = updatedNameLine;
-
-        infoPlistFile.writeAsString(fileContents.join('\n'));
-        printWarning('Changed \'CFBundleDisplayName\' value in $subPath');
-      }
+      infoPlistFile.writeAsStringSync(fileContents.join('\n'));
     }
   }
   stdout.writeln("✔ iOS app display names configured!");
+}
+
+void _addOrUpdateIOSString(
+    List<String> fileContents, String subPath, String key, String? value) {
+  int targetLineIndex =
+      fileContents.indexWhere((String line) => line.contains(key));
+
+  if (targetLineIndex == -1) {
+    if (value != null) {
+      fileContents.insert(fileContents.length, '$key = "$value";');
+      printWarning('Added \'CFBundleDisplayName\' key to $subPath');
+    }
+  } else {
+    if (value == null) {
+      fileContents.removeAt(targetLineIndex);
+      printWarning('Removed \'$key\' value in $subPath');
+    } else {
+      String nameLine = fileContents[targetLineIndex];
+
+      int keyLength = key.length;
+      int substringStart = nameLine.indexOf(key) + keyLength;
+      String subString = nameLine.substring(substringStart);
+
+      int currentNameStart = subString.indexOf('"') + 1;
+      int currentNameEnd = subString.indexOf('";');
+
+      String currentName =
+          subString.substring(currentNameStart, currentNameEnd);
+      String updatedNameLine = nameLine.replaceAll(currentName, value);
+      fileContents[targetLineIndex] = updatedNameLine;
+      printWarning('Changed \'$key\' value in $subPath');
+    }
+  }
 }
 
 String _getAndroidFileContent(String appName) {
@@ -155,8 +224,8 @@ String _getAndroidFileContent(String appName) {
 }
 
 class _DisplayNamesConfig {
-  final List<_DisplayName> androidNames;
-  final List<_DisplayName> iOSNames;
+  final List<_AndroidDisplayName> androidNames;
+  final List<_IOSStrings> iOSNames;
 
   _DisplayNamesConfig({
     required this.androidNames,
@@ -166,19 +235,42 @@ class _DisplayNamesConfig {
   factory _DisplayNamesConfig.fromJson(Map<String, dynamic> json) {
     return _DisplayNamesConfig(
       androidNames:
-          _displayNamesFromMap(json['android'] as Map<String, dynamic>),
-      iOSNames: _displayNamesFromMap(json['iOS'] as Map<String, dynamic>),
+          _androidDisplayNamesFromMap(json['android'] as Map<String, dynamic>),
+      iOSNames: _iOSStringFromMap(json['iOS'] as Map<String, dynamic>),
     );
   }
 
-  static List<_DisplayName> _displayNamesFromMap(
+  static List<_AndroidDisplayName> _androidDisplayNamesFromMap(
       Map<String, dynamic> namesMap) {
     return namesMap.entries
         .map(
           (MapEntry<String, dynamic> entry) =>
-              _DisplayName(lang: entry.key, name: entry.value),
+              _AndroidDisplayName(lang: entry.key, name: entry.value),
         )
         .toList();
+  }
+
+  static List<_IOSStrings> _iOSStringFromMap(Map<String, dynamic> namesMap) {
+    return namesMap.entries.map((MapEntry<String, dynamic> entry) {
+      String lang = entry.key;
+      Map<String, dynamic> stringsMap = entry.value;
+
+      return _IOSStrings(
+        lang: lang,
+        title: stringsMap['title'],
+        nSPhotoLibraryUsageDescription:
+            stringsMap['NSPhotoLibraryUsageDescription'],
+        nSCameraUsageDescription: stringsMap['NSCameraUsageDescription'],
+        nSMicrophoneUsageDescription:
+            stringsMap['NSMicrophoneUsageDescription'],
+        nSLocationWhenInUseUsageDescription:
+            stringsMap['NSLocationWhenInUseUsageDescription'],
+        nSLocationAlwaysUsageDescription:
+            stringsMap['NSLocationAlwaysUsageDescription'],
+        nSLocationAlwaysAndWhenInUseUsageDescription:
+            stringsMap['NSLocationAlwaysAndWhenInUseUsageDescription'],
+      );
+    }).toList();
   }
 
   @override
@@ -187,12 +279,12 @@ class _DisplayNamesConfig {
 
     buffer.writeln('{');
     buffer.writeln('  "android":{');
-    for (_DisplayName name in androidNames) {
+    for (_AndroidDisplayName name in androidNames) {
       buffer.writeln('    ${name.toString()},');
     }
     buffer.writeln('  }');
     buffer.writeln('  "iOS":{');
-    for (_DisplayName name in iOSNames) {
+    for (_IOSStrings name in iOSNames) {
       buffer.writeln('    ${name.toString()},');
     }
     buffer.writeln('  }');
@@ -201,11 +293,33 @@ class _DisplayNamesConfig {
   }
 }
 
-class _DisplayName {
+class _IOSStrings {
+  final String lang;
+  final String title;
+  final String? nSPhotoLibraryUsageDescription;
+  final String? nSCameraUsageDescription;
+  final String? nSMicrophoneUsageDescription;
+  final String? nSLocationWhenInUseUsageDescription;
+  final String? nSLocationAlwaysUsageDescription;
+  final String? nSLocationAlwaysAndWhenInUseUsageDescription;
+
+  _IOSStrings({
+    required this.lang,
+    required this.title,
+    required this.nSPhotoLibraryUsageDescription,
+    required this.nSCameraUsageDescription,
+    required this.nSMicrophoneUsageDescription,
+    required this.nSLocationWhenInUseUsageDescription,
+    required this.nSLocationAlwaysUsageDescription,
+    required this.nSLocationAlwaysAndWhenInUseUsageDescription,
+  });
+}
+
+class _AndroidDisplayName {
   final String lang;
   final String name;
 
-  _DisplayName({
+  _AndroidDisplayName({
     required this.lang,
     required this.name,
   });
